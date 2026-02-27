@@ -97,6 +97,41 @@
       font-size: 14px;
       color: #475569;
     }
+
+    caption {
+      caption-side: top;
+      margin-bottom: 12px;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: left;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 600;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+    }
+
+    .group-row th {
+      background: #e2e8f0;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -108,6 +143,34 @@
     </div>
     <div class="card">
       <svg id="fsm" viewBox="0 0 700 520" role="img" aria-label="Граф конечного автомата"></svg>
+    </div>
+    <div class="card">
+      <div class="table-scroll">
+        <table id="encoding-table">
+          <caption>Таблица кодировок</caption>
+          <thead>
+            <tr>
+              <th>Обозначение</th>
+              <th>Бинарный код</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="table-scroll">
+        <table id="transition-table">
+          <caption>Таблица переходов</caption>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="table-scroll">
+        <table id="binary-table">
+          <caption>Таблица кодов переходов</caption>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -127,6 +190,7 @@
       { from: "A", to: "B", input: "i1", output: "o2", curve: -35, labelOffset: { x: 0, y: -20 } },
       { from: "B", to: "C", input: "i2", output: "o1", curve: -20, labelOffset: { x: 25, y: -10 } },
       { from: "C", to: "D", input: "i3", output: "o3", curve: -18, labelOffset: { x: 25, y: 10 } },
+      { from: "C", to: "C", input: "i4", output: "o1", curve: 52, labelOffset: { x: 0, y: -8 } },
       { from: "D", to: "B", input: "i4", output: "o4", curve: -60, labelOffset: { x: -35, y: 0 } },
       { from: "D", to: "E", input: "i1", output: "o5", curve: -15, labelOffset: { x: 0, y: 20 } },
       { from: "E", to: "A", input: "i2", output: "o3", curve: 28, labelOffset: { x: -20, y: 0 } },
@@ -135,14 +199,57 @@
 
     const svg = document.getElementById("fsm");
     const radius = 28;
+    const loopOffsetMultiplier = 1.8;
+    const loopAnchorOffset = 0.7;
+    const loopLabelPaddingMultiplier = 0.2;
     const ns = "http://www.w3.org/2000/svg";
 
     const stateMap = new Map(stateData.map((state) => [state.id, state]));
+    const encodingTable = document.getElementById("encoding-table");
+    const transitionTable = document.getElementById("transition-table");
+    const binaryTable = document.getElementById("binary-table");
 
     function createSvgElement(tag, attrs = {}) {
       const element = document.createElementNS(ns, tag);
       Object.entries(attrs).forEach(([key, value]) => element.setAttribute(key, value));
       return element;
+    }
+
+    function createElement(tag, text, className) {
+      const element = document.createElement(tag);
+      if (text !== undefined) {
+        element.textContent = text;
+      }
+      if (className) {
+        element.className = className;
+      }
+      return element;
+    }
+
+    function getBitWidth(count) {
+      if (count <= 1) {
+        return 1;
+      }
+      return Math.ceil(Math.log2(count));
+    }
+
+    function encodeBinaryFromOneBasedIndex(index, width) {
+      return (index - 1).toString(2).padStart(width, "0");
+    }
+
+    function buildEncodingRows(prefix, ids, map, width) {
+      return ids
+        .map((id) => {
+          const index = map.get(id);
+          return { index, label: `${prefix}${index}`, binary: encodeBinaryFromOneBasedIndex(index, width) };
+        })
+        .sort((a, b) => a.index - b.index);
+    }
+
+    function appendHeaderCells(row, prefix, cellCount) {
+      for (let i = 0; i < cellCount; i += 1) {
+        row.appendChild(createElement("th", `${prefix}${i + 1}`));
+      }
     }
 
     function createSequentialMap(ids) {
@@ -159,6 +266,24 @@
     }
 
     function buildTransitionPath(start, end, curve) {
+      if (start === end || (start.x === end.x && start.y === end.y)) {
+        const curveOffset = curve ?? 0;
+        const loopOffset = Math.abs(curveOffset) || radius * loopOffsetMultiplier;
+        const startX = start.x + radius * loopAnchorOffset;
+        const startY = start.y - radius * loopAnchorOffset;
+        const endX = start.x - radius * loopAnchorOffset;
+        const endY = start.y - radius * loopAnchorOffset;
+        const control1X = start.x + loopOffset;
+        const control1Y = start.y - loopOffset;
+        const control2X = start.x - loopOffset;
+        const control2Y = start.y - loopOffset;
+
+        return {
+          d: `M ${startX} ${startY} C ${control1X} ${control1Y} ${control2X} ${control2Y} ${endX} ${endY}`,
+          label: { x: start.x, y: start.y - loopOffset - radius * loopLabelPaddingMultiplier }
+        };
+      }
+
       const dx = end.x - start.x;
       const dy = end.y - start.y;
       const distance = Math.hypot(dx, dy) || 1;
@@ -189,6 +314,136 @@
         d: `M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}`,
         label: { x: labelX, y: labelY }
       };
+    }
+
+    function renderEncodingTable(stateMapIndices, inputMapIndices, outputMapIndices) {
+      const body = encodingTable.querySelector("tbody");
+      body.innerHTML = "";
+
+      const groups = [
+        {
+          title: "Входы",
+          prefix: "x",
+          ids: inputIds,
+          map: inputMapIndices,
+          width: getBitWidth(inputIds.length)
+        },
+        {
+          title: "Состояния",
+          prefix: "S",
+          ids: stateData.map((state) => state.id),
+          map: stateMapIndices,
+          width: getBitWidth(stateData.length)
+        },
+        {
+          title: "Реакции",
+          prefix: "y",
+          ids: outputIds,
+          map: outputMapIndices,
+          width: getBitWidth(outputIds.length)
+        }
+      ];
+
+      groups.forEach((group) => {
+        const groupRow = createElement("tr", undefined, "group-row");
+        const groupHeader = createElement("th", group.title);
+        groupHeader.colSpan = 2;
+        groupRow.appendChild(groupHeader);
+        body.appendChild(groupRow);
+
+        const rows = buildEncodingRows(group.prefix, group.ids, group.map, group.width);
+        rows.forEach((row) => {
+          const rowElement = createElement("tr");
+          rowElement.appendChild(createElement("td", row.label));
+          rowElement.appendChild(createElement("td", row.binary));
+          body.appendChild(rowElement);
+        });
+      });
+    }
+
+    function renderTransitionTable(stateMapIndices, inputMapIndices, outputMapIndices) {
+      transitionTable.querySelectorAll("thead, tbody").forEach((element) => element.remove());
+
+      const orderedStates = stateData
+        .map((state) => ({ id: state.id, index: stateMapIndices.get(state.id) }))
+        .sort((a, b) => a.index - b.index);
+      const orderedInputs = inputIds
+        .map((id) => ({ id, index: inputMapIndices.get(id) }))
+        .sort((a, b) => a.index - b.index);
+
+      const head = createElement("thead");
+      const headerRow = createElement("tr");
+      headerRow.appendChild(createElement("th", "x / S"));
+      orderedStates.forEach((state) => headerRow.appendChild(createElement("th", `S${state.index}`)));
+      head.appendChild(headerRow);
+      transitionTable.appendChild(head);
+
+      const body = createElement("tbody");
+      orderedInputs.forEach((input) => {
+        const row = createElement("tr");
+        row.appendChild(createElement("th", `x${input.index}`));
+        orderedStates.forEach((state) => {
+          const transition = transitions.find(
+            (item) => item.from === state.id && item.input === input.id
+          );
+          const cellText = transition
+            ? `S${stateMapIndices.get(transition.to)} / y${outputMapIndices.get(transition.output)}`
+            : "—";
+          row.appendChild(createElement("td", cellText));
+        });
+        body.appendChild(row);
+      });
+      transitionTable.appendChild(body);
+    }
+
+    function renderBinaryTable(stateMapIndices, inputMapIndices, outputMapIndices) {
+      binaryTable.querySelectorAll("thead, tbody").forEach((element) => element.remove());
+
+      const inputWidth = getBitWidth(inputIds.length);
+      const stateWidth = getBitWidth(stateData.length);
+      const outputWidth = getBitWidth(outputIds.length);
+
+      const head = createElement("thead");
+      const headerRow = createElement("tr");
+      appendHeaderCells(headerRow, "X", inputWidth);
+      appendHeaderCells(headerRow, "Q", stateWidth);
+      appendHeaderCells(headerRow, "q", stateWidth);
+      appendHeaderCells(headerRow, "Y", outputWidth);
+      head.appendChild(headerRow);
+      binaryTable.appendChild(head);
+
+      const body = createElement("tbody");
+      transitions.forEach((transition) => {
+        const row = createElement("tr");
+        const inputBinary = encodeBinaryFromOneBasedIndex(
+          inputMapIndices.get(transition.input),
+          inputWidth
+        );
+        const stateBinary = encodeBinaryFromOneBasedIndex(
+          stateMapIndices.get(transition.from),
+          stateWidth
+        );
+        const nextBinary = encodeBinaryFromOneBasedIndex(
+          stateMapIndices.get(transition.to),
+          stateWidth
+        );
+        const outputBinary = encodeBinaryFromOneBasedIndex(
+          outputMapIndices.get(transition.output),
+          outputWidth
+        );
+
+        [...inputBinary, ...stateBinary, ...nextBinary, ...outputBinary].forEach((bit) => {
+          row.appendChild(createElement("td", bit));
+        });
+        body.appendChild(row);
+      });
+      binaryTable.appendChild(body);
+    }
+
+    function renderTables(stateMapIndices, inputMapIndices, outputMapIndices) {
+      renderEncodingTable(stateMapIndices, inputMapIndices, outputMapIndices);
+      renderTransitionTable(stateMapIndices, inputMapIndices, outputMapIndices);
+      renderBinaryTable(stateMapIndices, inputMapIndices, outputMapIndices);
     }
 
     function renderGraph() {
@@ -259,6 +514,8 @@
         const outputIndex = outputMapIndices.get(label.dataset.output);
         label.textContent = `x${inputIndex} / y${outputIndex}`;
       });
+
+      renderTables(stateMapIndices, inputMapIndices, outputMapIndices);
     }
 
     function randomizeIndices() {
