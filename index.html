@@ -164,7 +164,8 @@
 
     function buildTransitionPath(start, end, curve) {
       if (start === end || (start.x === end.x && start.y === end.y)) {
-        const loopOffset = Math.abs(curve) || radius * loopOffsetMultiplier;
+        const curveOffset = curve ?? 0;
+        const loopOffset = Math.abs(curveOffset) || radius * loopOffsetMultiplier;
         const startX = start.x + radius * loopAnchorOffset;
         const startY = start.y - radius * loopAnchorOffset;
         const endX = start.x - radius * loopAnchorOffset;
