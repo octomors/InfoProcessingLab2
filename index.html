@@ -98,9 +98,12 @@
       color: #475569;
     }
 
-    h2 {
-      margin: 0 0 12px;
+    caption {
+      caption-side: top;
+      margin-bottom: 12px;
       font-size: 18px;
+      font-weight: 600;
+      text-align: left;
     }
 
     table {
@@ -142,9 +145,9 @@
       <svg id="fsm" viewBox="0 0 700 520" role="img" aria-label="Граф конечного автомата"></svg>
     </div>
     <div class="card">
-      <h2 id="encoding-title">Таблица кодировок</h2>
       <div class="table-scroll">
-        <table id="encoding-table" aria-labelledby="encoding-title">
+        <table id="encoding-table">
+          <caption>Таблица кодировок</caption>
           <thead>
             <tr>
               <th>Обозначение</th>
@@ -156,15 +159,17 @@
       </div>
     </div>
     <div class="card">
-      <h2 id="transition-title">Таблица переходов</h2>
       <div class="table-scroll">
-        <table id="transition-table" aria-labelledby="transition-title"></table>
+        <table id="transition-table">
+          <caption>Таблица переходов</caption>
+        </table>
       </div>
     </div>
     <div class="card">
-      <h2 id="binary-title">Таблица кодов переходов</h2>
       <div class="table-scroll">
-        <table id="binary-table" aria-labelledby="binary-title"></table>
+        <table id="binary-table">
+          <caption>Таблица кодов переходов</caption>
+        </table>
       </div>
     </div>
   </div>
@@ -222,10 +227,13 @@
     }
 
     function getBitWidth(count) {
-      return Math.max(1, Math.ceil(Math.log2(count)));
+      if (count <= 1) {
+        return 1;
+      }
+      return Math.ceil(Math.log2(count));
     }
 
-    function indexToBinary(index, width) {
+    function encodeBinaryFromOneBasedIndex(index, width) {
       return (index - 1).toString(2).padStart(width, "0");
     }
 
@@ -233,13 +241,13 @@
       return ids
         .map((id) => {
           const index = map.get(id);
-          return { index, label: `${prefix}${index}`, binary: indexToBinary(index, width) };
+          return { index, label: `${prefix}${index}`, binary: encodeBinaryFromOneBasedIndex(index, width) };
         })
         .sort((a, b) => a.index - b.index);
     }
 
-    function appendHeaderCells(row, prefix, width) {
-      for (let i = 0; i < width; i += 1) {
+    function appendHeaderCells(row, prefix, cellCount) {
+      for (let i = 0; i < cellCount; i += 1) {
         row.appendChild(createElement("th", `${prefix}${i + 1}`));
       }
     }
@@ -354,7 +362,7 @@
     }
 
     function renderTransitionTable(stateMapIndices, inputMapIndices, outputMapIndices) {
-      transitionTable.innerHTML = "";
+      transitionTable.querySelectorAll("thead, tbody").forEach((element) => element.remove());
 
       const orderedStates = stateData
         .map((state) => ({ id: state.id, index: stateMapIndices.get(state.id) }))
@@ -389,7 +397,7 @@
     }
 
     function renderBinaryTable(stateMapIndices, inputMapIndices, outputMapIndices) {
-      binaryTable.innerHTML = "";
+      binaryTable.querySelectorAll("thead, tbody").forEach((element) => element.remove());
 
       const inputWidth = getBitWidth(inputIds.length);
       const stateWidth = getBitWidth(stateData.length);
@@ -407,10 +415,22 @@
       const body = createElement("tbody");
       transitions.forEach((transition) => {
         const row = createElement("tr");
-        const inputBinary = indexToBinary(inputMapIndices.get(transition.input), inputWidth);
-        const stateBinary = indexToBinary(stateMapIndices.get(transition.from), stateWidth);
-        const nextBinary = indexToBinary(stateMapIndices.get(transition.to), stateWidth);
-        const outputBinary = indexToBinary(outputMapIndices.get(transition.output), outputWidth);
+        const inputBinary = encodeBinaryFromOneBasedIndex(
+          inputMapIndices.get(transition.input),
+          inputWidth
+        );
+        const stateBinary = encodeBinaryFromOneBasedIndex(
+          stateMapIndices.get(transition.from),
+          stateWidth
+        );
+        const nextBinary = encodeBinaryFromOneBasedIndex(
+          stateMapIndices.get(transition.to),
+          stateWidth
+        );
+        const outputBinary = encodeBinaryFromOneBasedIndex(
+          outputMapIndices.get(transition.output),
+          outputWidth
+        );
 
         [...inputBinary, ...stateBinary, ...nextBinary, ...outputBinary].forEach((bit) => {
           row.appendChild(createElement("td", bit));
