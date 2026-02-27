@@ -142,9 +142,9 @@
       <svg id="fsm" viewBox="0 0 700 520" role="img" aria-label="Граф конечного автомата"></svg>
     </div>
     <div class="card">
-      <h2>Таблица кодировок</h2>
+      <h2 id="encoding-title">Таблица кодировок</h2>
       <div class="table-scroll">
-        <table id="encoding-table">
+        <table id="encoding-table" aria-labelledby="encoding-title">
           <thead>
             <tr>
               <th>Обозначение</th>
@@ -156,15 +156,15 @@
       </div>
     </div>
     <div class="card">
-      <h2>Таблица переходов</h2>
+      <h2 id="transition-title">Таблица переходов</h2>
       <div class="table-scroll">
-        <table id="transition-table"></table>
+        <table id="transition-table" aria-labelledby="transition-title"></table>
       </div>
     </div>
     <div class="card">
-      <h2>Таблица кодов переходов</h2>
+      <h2 id="binary-title">Таблица кодов переходов</h2>
       <div class="table-scroll">
-        <table id="binary-table"></table>
+        <table id="binary-table" aria-labelledby="binary-title"></table>
       </div>
     </div>
   </div>
@@ -225,7 +225,7 @@
       return Math.max(1, Math.ceil(Math.log2(count)));
     }
 
-    function formatBinaryIndex(index, width) {
+    function indexToBinary(index, width) {
       return (index - 1).toString(2).padStart(width, "0");
     }
 
@@ -233,9 +233,15 @@
       return ids
         .map((id) => {
           const index = map.get(id);
-          return { index, label: `${prefix}${index}`, binary: formatBinaryIndex(index, width) };
+          return { index, label: `${prefix}${index}`, binary: indexToBinary(index, width) };
         })
         .sort((a, b) => a.index - b.index);
+    }
+
+    function appendHeaderCells(row, prefix, width) {
+      for (let i = 0; i < width; i += 1) {
+        row.appendChild(createElement("th", `${prefix}${i + 1}`));
+      }
     }
 
     function createSequentialMap(ids) {
@@ -391,28 +397,20 @@
 
       const head = createElement("thead");
       const headerRow = createElement("tr");
-      for (let i = 0; i < inputWidth; i += 1) {
-        headerRow.appendChild(createElement("th", `X${i + 1}`));
-      }
-      for (let i = 0; i < stateWidth; i += 1) {
-        headerRow.appendChild(createElement("th", `Q${i + 1}`));
-      }
-      for (let i = 0; i < stateWidth; i += 1) {
-        headerRow.appendChild(createElement("th", `q${i + 1}`));
-      }
-      for (let i = 0; i < outputWidth; i += 1) {
-        headerRow.appendChild(createElement("th", `Y${i + 1}`));
-      }
+      appendHeaderCells(headerRow, "X", inputWidth);
+      appendHeaderCells(headerRow, "Q", stateWidth);
+      appendHeaderCells(headerRow, "q", stateWidth);
+      appendHeaderCells(headerRow, "Y", outputWidth);
       head.appendChild(headerRow);
       binaryTable.appendChild(head);
 
       const body = createElement("tbody");
       transitions.forEach((transition) => {
         const row = createElement("tr");
-        const inputBinary = formatBinaryIndex(inputMapIndices.get(transition.input), inputWidth);
-        const stateBinary = formatBinaryIndex(stateMapIndices.get(transition.from), stateWidth);
-        const nextBinary = formatBinaryIndex(stateMapIndices.get(transition.to), stateWidth);
-        const outputBinary = formatBinaryIndex(outputMapIndices.get(transition.output), outputWidth);
+        const inputBinary = indexToBinary(inputMapIndices.get(transition.input), inputWidth);
+        const stateBinary = indexToBinary(stateMapIndices.get(transition.from), stateWidth);
+        const nextBinary = indexToBinary(stateMapIndices.get(transition.to), stateWidth);
+        const outputBinary = indexToBinary(outputMapIndices.get(transition.output), outputWidth);
 
         [...inputBinary, ...stateBinary, ...nextBinary, ...outputBinary].forEach((bit) => {
           row.appendChild(createElement("td", bit));
