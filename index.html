@@ -136,6 +136,9 @@
 
     const svg = document.getElementById("fsm");
     const radius = 28;
+    const loopOffsetMultiplier = 1.8;
+    const loopAnchorOffset = 0.7;
+    const loopLabelPaddingMultiplier = 0.2;
     const ns = "http://www.w3.org/2000/svg";
 
     const stateMap = new Map(stateData.map((state) => [state.id, state]));
@@ -161,11 +164,11 @@
 
     function buildTransitionPath(start, end, curve) {
       if (start === end || (start.x === end.x && start.y === end.y)) {
-        const loopOffset = Math.abs(curve) || radius * 1.8;
-        const startX = start.x + radius * 0.7;
-        const startY = start.y - radius * 0.7;
-        const endX = start.x - radius * 0.7;
-        const endY = start.y - radius * 0.7;
+        const loopOffset = Math.abs(curve) || radius * loopOffsetMultiplier;
+        const startX = start.x + radius * loopAnchorOffset;
+        const startY = start.y - radius * loopAnchorOffset;
+        const endX = start.x - radius * loopAnchorOffset;
+        const endY = start.y - radius * loopAnchorOffset;
         const control1X = start.x + loopOffset;
         const control1Y = start.y - loopOffset;
         const control2X = start.x - loopOffset;
@@ -173,7 +176,7 @@
 
         return {
           d: `M ${startX} ${startY} C ${control1X} ${control1Y} ${control2X} ${control2Y} ${endX} ${endY}`,
-          label: { x: start.x, y: start.y - loopOffset - radius * 0.2 }
+          label: { x: start.x, y: start.y - loopOffset - radius * loopLabelPaddingMultiplier }
         };
       }
 
