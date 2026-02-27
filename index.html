@@ -190,7 +190,7 @@
       { from: "A", to: "B", input: "i1", output: "o2", curve: -35, labelOffset: { x: 0, y: -20 } },
       { from: "B", to: "C", input: "i2", output: "o1", curve: -20, labelOffset: { x: 25, y: -10 } },
       { from: "C", to: "D", input: "i3", output: "o3", curve: -18, labelOffset: { x: 25, y: 10 } },
-      { from: "C", to: "C", input: "i4", output: "o1", curve: 52, labelOffset: { x: 0, y: -8 } },
+      { from: "C", to: "C", input: "i4", output: "o1", curve: 80, labelOffset: { x: 0, y: 0 } },
       { from: "D", to: "B", input: "i4", output: "o4", curve: -60, labelOffset: { x: -35, y: 0 } },
       { from: "D", to: "E", input: "i1", output: "o5", curve: -15, labelOffset: { x: 0, y: 20 } },
       { from: "E", to: "A", input: "i2", output: "o3", curve: 28, labelOffset: { x: -20, y: 0 } },
@@ -201,7 +201,7 @@
     const radius = 28;
     const loopOffsetMultiplier = 1.8;
     const loopAnchorOffset = 0.7;
-    const loopLabelPaddingMultiplier = 0.2;
+    const loopLabelPaddingMultiplier = 0.0;
     const ns = "http://www.w3.org/2000/svg";
 
     const stateMap = new Map(stateData.map((state) => [state.id, state]));
@@ -373,7 +373,7 @@
 
       const head = createElement("thead");
       const headerRow = createElement("tr");
-      headerRow.appendChild(createElement("th", "x / S"));
+      headerRow.appendChild(createElement("th", "x \\ S"));
       orderedStates.forEach((state) => headerRow.appendChild(createElement("th", `S${state.index}`)));
       head.appendChild(headerRow);
       transitionTable.appendChild(head);
