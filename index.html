@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Конечный автомат</title>
+  <style>
+    :root {
+      color-scheme: light;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6fb;
+      color: #1f2937;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 24px;
+    }
+
+    .layout {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    button {
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 18px rgba(37, 99, 235, 0.28);
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    svg {
+      width: 100%;
+      height: 520px;
+    }
+
+    .state {
+      fill: #e0e7ff;
+      stroke: #4f46e5;
+      stroke-width: 2px;
+    }
+
+    .state-label {
+      font-size: 16px;
+      font-weight: 600;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      fill: #312e81;
+    }
+
+    .transition {
+      fill: none;
+      stroke: #1f2937;
+      stroke-width: 2px;
+    }
+
+    .transition-label {
+      font-size: 13px;
+      font-weight: 600;
+      fill: #0f172a;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      background: #fff;
+    }
+
+    .legend {
+      font-size: 14px;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <h1>Граф конечного автомата</h1>
+    <div class="controls">
+      <button id="randomize">Рандомизировать</button>
+      <span class="legend">Состояния: Sᵢ, входы: xᵢ, реакции: yᵢ</span>
+    </div>
+    <div class="card">
+      <svg id="fsm" viewBox="0 0 700 520" role="img" aria-label="Граф конечного автомата"></svg>
+    </div>
+  </div>
+
+  <script>
+    const stateData = [
+      { id: "A", x: 120, y: 140 },
+      { id: "B", x: 360, y: 90 },
+      { id: "C", x: 560, y: 220 },
+      { id: "D", x: 360, y: 360 },
+      { id: "E", x: 120, y: 300 }
+    ];
+
+    const inputIds = ["i1", "i2", "i3", "i4"];
+    const outputIds = ["o1", "o2", "o3", "o4", "o5"];
+
+    const transitions = [
+      { from: "A", to: "B", input: "i1", output: "o2", curve: -35, labelOffset: { x: 0, y: -12 } },
+      { from: "B", to: "C", input: "i2", output: "o1", curve: -20, labelOffset: { x: 10, y: -6 } },
+      { from: "C", to: "D", input: "i3", output: "o3", curve: -18, labelOffset: { x: 18, y: 8 } },
+      { from: "D", to: "B", input: "i4", output: "o4", curve: 45, labelOffset: { x: -4, y: -14 } },
+      { from: "D", to: "E", input: "i1", output: "o5", curve: -15, labelOffset: { x: -12, y: 6 } },
+      { from: "E", to: "A", input: "i2", output: "o3", curve: 28, labelOffset: { x: -18, y: -8 } },
+      { from: "B", to: "D", input: "i3", output: "o2", curve: -26, labelOffset: { x: 22, y: 4 } }
+    ];
+
+    const svg = document.getElementById("fsm");
+    const radius = 28;
+    const ns = "http://www.w3.org/2000/svg";
+
+    const stateMap = new Map(stateData.map((state) => [state.id, state]));
+
+    function createSvgElement(tag, attrs = {}) {
+      const element = document.createElementNS(ns, tag);
+      Object.entries(attrs).forEach(([key, value]) => element.setAttribute(key, value));
+      return element;
+    }
+
+    function createSequentialMap(ids) {
+      return new Map(ids.map((id, index) => [id, index + 1]));
+    }
+
+    function createShuffledMap(ids) {
+      const indices = ids.map((_, index) => index + 1);
+      for (let i = indices.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indices[i], indices[j]] = [indices[j], indices[i]];
+      }
+      return new Map(ids.map((id, index) => [id, indices[index]]));
+    }
+
+    function buildTransitionPath(start, end, curve) {
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const distance = Math.hypot(dx, dy) || 1;
+      const ux = dx / distance;
+      const uy = dy / distance;
+      const startX = start.x + ux * radius;
+      const startY = start.y + uy * radius;
+      const endX = end.x - ux * radius;
+      const endY = end.y - uy * radius;
+      const midX = (startX + endX) / 2;
+      const midY = (startY + endY) / 2;
+      const perpX = -uy;
+      const perpY = ux;
+      const curveOffset = curve || 0;
+      const controlX = midX + perpX * curveOffset;
+      const controlY = midY + perpY * curveOffset;
+      const labelX = midX + perpX * curveOffset * 0.35;
+      const labelY = midY + perpY * curveOffset * 0.35;
+
+      if (!curveOffset) {
+        return {
+          d: `M ${startX} ${startY} L ${endX} ${endY}`,
+          label: { x: midX, y: midY }
+        };
+      }
+
+      return {
+        d: `M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}`,
+        label: { x: labelX, y: labelY }
+      };
+    }
+
+    function renderGraph() {
+      svg.innerHTML = "";
+
+      const defs = createSvgElement("defs");
+      const marker = createSvgElement("marker", {
+        id: "arrow",
+        markerWidth: "10",
+        markerHeight: "10",
+        refX: "8",
+        refY: "3",
+        orient: "auto",
+        markerUnits: "strokeWidth"
+      });
+      marker.appendChild(createSvgElement("path", { d: "M0,0 L0,6 L9,3 z", fill: "#1f2937" }));
+      defs.appendChild(marker);
+      svg.appendChild(defs);
+
+      transitions.forEach((transition) => {
+        const start = stateMap.get(transition.from);
+        const end = stateMap.get(transition.to);
+        const pathData = buildTransitionPath(start, end, transition.curve);
+        const path = createSvgElement("path", {
+          d: pathData.d,
+          class: "transition",
+          "marker-end": "url(#arrow)"
+        });
+        svg.appendChild(path);
+
+        const label = createSvgElement("text", {
+          x: pathData.label.x + (transition.labelOffset?.x || 0),
+          y: pathData.label.y + (transition.labelOffset?.y || 0),
+          class: "transition-label",
+          "data-input": transition.input,
+          "data-output": transition.output
+        });
+        svg.appendChild(label);
+      });
+
+      stateData.forEach((state) => {
+        const group = createSvgElement("g");
+        group.appendChild(createSvgElement("circle", {
+          cx: state.x,
+          cy: state.y,
+          r: radius,
+          class: "state"
+        }));
+        const label = createSvgElement("text", {
+          x: state.x,
+          y: state.y,
+          class: "state-label",
+          "data-state": state.id
+        });
+        group.appendChild(label);
+        svg.appendChild(group);
+      });
+    }
+
+    function applyLabels(stateMapIndices, inputMapIndices, outputMapIndices) {
+      svg.querySelectorAll("[data-state]").forEach((label) => {
+        const index = stateMapIndices.get(label.dataset.state);
+        label.textContent = `S${index}`;
+      });
+
+      svg.querySelectorAll("[data-input]").forEach((label) => {
+        const inputIndex = inputMapIndices.get(label.dataset.input);
+        const outputIndex = outputMapIndices.get(label.dataset.output);
+        label.textContent = `x${inputIndex} / y${outputIndex}`;
+      });
+    }
+
+    function randomizeIndices() {
+      applyLabels(
+        createShuffledMap(stateData.map((state) => state.id)),
+        createShuffledMap(inputIds),
+        createShuffledMap(outputIds)
+      );
+    }
+
+    renderGraph();
+    applyLabels(
+      createSequentialMap(stateData.map((state) => state.id)),
+      createSequentialMap(inputIds),
+      createSequentialMap(outputIds)
+    );
+
+    document.getElementById("randomize").addEventListener("click", randomizeIndices);
+  </script>
+</body>
+</html>
