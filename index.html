@@ -127,6 +127,7 @@
       { from: "A", to: "B", input: "i1", output: "o2", curve: -35, labelOffset: { x: 0, y: -20 } },
       { from: "B", to: "C", input: "i2", output: "o1", curve: -20, labelOffset: { x: 25, y: -10 } },
       { from: "C", to: "D", input: "i3", output: "o3", curve: -18, labelOffset: { x: 25, y: 10 } },
+      { from: "C", to: "C", input: "i4", output: "o1", curve: 52, labelOffset: { x: 0, y: -8 } },
       { from: "D", to: "B", input: "i4", output: "o4", curve: -60, labelOffset: { x: -35, y: 0 } },
       { from: "D", to: "E", input: "i1", output: "o5", curve: -15, labelOffset: { x: 0, y: 20 } },
       { from: "E", to: "A", input: "i2", output: "o3", curve: 28, labelOffset: { x: -20, y: 0 } },
@@ -159,6 +160,23 @@
     }
 
     function buildTransitionPath(start, end, curve) {
+      if (start === end || (start.x === end.x && start.y === end.y)) {
+        const loopOffset = Math.abs(curve) || radius * 1.8;
+        const startX = start.x + radius * 0.7;
+        const startY = start.y - radius * 0.7;
+        const endX = start.x - radius * 0.7;
+        const endY = start.y - radius * 0.7;
+        const control1X = start.x + loopOffset;
+        const control1Y = start.y - loopOffset;
+        const control2X = start.x - loopOffset;
+        const control2Y = start.y - loopOffset;
+
+        return {
+          d: `M ${startX} ${startY} C ${control1X} ${control1Y} ${control2X} ${control2Y} ${endX} ${endY}`,
+          label: { x: start.x, y: start.y - loopOffset - radius * 0.2 }
+        };
+      }
+
       const dx = end.x - start.x;
       const dy = end.y - start.y;
       const distance = Math.hypot(dx, dy) || 1;
