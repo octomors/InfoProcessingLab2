@@ -124,13 +124,13 @@
     const outputIds = ["o1", "o2", "o3", "o4", "o5"];
 
     const transitions = [
-      { from: "A", to: "B", input: "i1", output: "o2", curve: -35, labelOffset: { x: 0, y: -12 } },
-      { from: "B", to: "C", input: "i2", output: "o1", curve: -20, labelOffset: { x: 10, y: -6 } },
-      { from: "C", to: "D", input: "i3", output: "o3", curve: -18, labelOffset: { x: 18, y: 8 } },
-      { from: "D", to: "B", input: "i4", output: "o4", curve: 45, labelOffset: { x: -4, y: -14 } },
-      { from: "D", to: "E", input: "i1", output: "o5", curve: -15, labelOffset: { x: -12, y: 6 } },
-      { from: "E", to: "A", input: "i2", output: "o3", curve: 28, labelOffset: { x: -18, y: -8 } },
-      { from: "B", to: "D", input: "i3", output: "o2", curve: -26, labelOffset: { x: 22, y: 4 } }
+      { from: "A", to: "B", input: "i1", output: "o2", curve: -35, labelOffset: { x: 0, y: -20 } },
+      { from: "B", to: "C", input: "i2", output: "o1", curve: -20, labelOffset: { x: 25, y: -10 } },
+      { from: "C", to: "D", input: "i3", output: "o3", curve: -18, labelOffset: { x: 25, y: 10 } },
+      { from: "D", to: "B", input: "i4", output: "o4", curve: -60, labelOffset: { x: -35, y: 0 } },
+      { from: "D", to: "E", input: "i1", output: "o5", curve: -15, labelOffset: { x: 0, y: 20 } },
+      { from: "E", to: "A", input: "i2", output: "o3", curve: 28, labelOffset: { x: -20, y: 0 } },
+      { from: "B", to: "D", input: "i3", output: "o2", curve: -60, labelOffset: { x: 35, y: 0 } }
     ];
 
     const svg = document.getElementById("fsm");
